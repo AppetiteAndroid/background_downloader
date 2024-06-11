@@ -39,8 +39,7 @@ final class DesktopDownloader extends BaseDownloader {
   final _queue = PriorityQueue<Task>();
   final _running = Queue<Task>(); // subset that is running
   final _resume = <Task>{};
-  final _isolateSendPorts =
-      <Task, SendPort?>{}; // isolate SendPort for running task
+  final _isolateSendPorts = <Task, SendPort?>{}; // isolate SendPort for running task
   static var httpClient = http.Client();
   static Duration? _requestTimeout;
   static var _proxy = <String, dynamic>{}; // 'address' and 'port'
@@ -86,8 +85,7 @@ final class DesktopDownloader extends BaseDownloader {
     final tasksThatHaveToWait = <Task>[];
     while (_queue.isNotEmpty) {
       final task = _queue.removeFirst();
-      if (_numActiveWithHostname(task.hostName) < maxConcurrentByHost &&
-          _numActiveWithGroup(task.group) < maxConcurrentByGroup) {
+      if (_numActiveWithHostname(task.hostName) < maxConcurrentByHost && _numActiveWithGroup(task.group) < maxConcurrentByGroup) {
         _queue.addAll(tasksThatHaveToWait); // put back in queue
         return task;
       }
@@ -98,16 +96,10 @@ final class DesktopDownloader extends BaseDownloader {
   }
 
   /// Returns number of tasks active with this [hostname]
-  int _numActiveWithHostname(String hostname) => _running.fold(
-      0,
-      (previousValue, task) =>
-          task.hostName == hostname ? previousValue + 1 : previousValue);
+  int _numActiveWithHostname(String hostname) => _running.fold(0, (previousValue, task) => task.hostName == hostname ? previousValue + 1 : previousValue);
 
   /// Returns number of tasks active with this [group]
-  int _numActiveWithGroup(String group) => _running.fold(
-      0,
-      (previousValue, task) =>
-          task.group == group ? previousValue + 1 : previousValue);
+  int _numActiveWithGroup(String group) => _running.fold(0, (previousValue, task) => task.group == group ? previousValue + 1 : previousValue);
 
   /// Execute this task
   ///
@@ -130,30 +122,19 @@ final class DesktopDownloader extends BaseDownloader {
       final stackTrace = message.last;
       logError(task, exceptionDescription);
       log.fine('Stack trace: $stackTrace');
-      processStatusUpdate(TaskStatusUpdate(
-          task, TaskStatus.failed, TaskException(exceptionDescription)));
+      processStatusUpdate(TaskStatusUpdate(task, TaskStatus.failed, TaskException(exceptionDescription)));
       receivePort.close(); // also ends listener at the end
     });
     RootIsolateToken? rootIsolateToken = RootIsolateToken.instance;
     if (rootIsolateToken == null) {
-      processStatusUpdate(TaskStatusUpdate(task, TaskStatus.failed,
-          TaskException('Could not obtain rootIsolateToken')));
+      processStatusUpdate(TaskStatusUpdate(task, TaskStatus.failed, TaskException('Could not obtain rootIsolateToken')));
       return;
     }
     log.finer('${isResume ? "Resuming" : "Starting"} taskId ${task.taskId}');
-    await Isolate.spawn(doTask, (rootIsolateToken, receivePort.sendPort),
-        onError: errorPort.sendPort);
+    await Isolate.spawn(doTask, (rootIsolateToken, receivePort.sendPort), onError: errorPort.sendPort);
     final messagesFromIsolate = StreamQueue<dynamic>(receivePort);
     final sendPort = await messagesFromIsolate.next as SendPort;
-    sendPort.send((
-      task,
-      filePath,
-      resumeData,
-      isResume,
-      requestTimeout,
-      proxy,
-      bypassTLSCertificateValidation
-    ));
+    sendPort.send((task, filePath, resumeData, isResume, requestTimeout, proxy, bypassTLSCertificateValidation));
     if (_isolateSendPorts.keys.contains(task)) {
       // if already registered with null value, cancel immediately
       sendPort.send('cancel');
@@ -181,40 +162,22 @@ final class DesktopDownloader extends BaseDownloader {
             String? mimeType,
             String? charSet
           ):
-          final taskStatusUpdate = TaskStatusUpdate(
-              updatedTask,
-              status,
-              exception,
-              responseBody,
-              responseHeaders,
-              responseCode,
-              mimeType,
-              charSet);
+          final taskStatusUpdate = TaskStatusUpdate(updatedTask, status, exception, responseBody, responseHeaders, responseCode, mimeType, charSet);
           if (updatedTask.group != BaseDownloader.chunkGroup) {
             if (status.isFinalState) {
               _remove(updatedTask);
             }
             processStatusUpdate(taskStatusUpdate);
           } else {
-            _parallelTaskSendPort(Chunk.getParentTaskId(updatedTask))
-                ?.send(taskStatusUpdate);
+            _parallelTaskSendPort(Chunk.getParentTaskId(updatedTask))?.send(taskStatusUpdate);
           }
 
-        case (
-            'progressUpdate',
-            Task updatedTask,
-            double progress,
-            int expectedFileSize,
-            double downloadSpeed,
-            Duration timeRemaining
-          ):
-          final taskProgressUpdate = TaskProgressUpdate(updatedTask, progress,
-              expectedFileSize, downloadSpeed, timeRemaining);
+        case ('progressUpdate', Task updatedTask, double progress, int expectedFileSize, double downloadSpeed, Duration timeRemaining):
+          final taskProgressUpdate = TaskProgressUpdate(updatedTask, progress, expectedFileSize, downloadSpeed, timeRemaining);
           if (updatedTask.group != BaseDownloader.chunkGroup) {
             processProgressUpdate(taskProgressUpdate);
           } else {
-            _parallelTaskSendPort(Chunk.getParentTaskId(updatedTask))
-                ?.send(taskProgressUpdate);
+            _parallelTaskSendPort(Chunk.getParentTaskId(updatedTask))?.send(taskProgressUpdate);
           }
 
         case ('taskCanResume', bool taskCanResume):
@@ -277,20 +240,13 @@ final class DesktopDownloader extends BaseDownloader {
 
   /// Return the [SendPort] for the [ParallelDownloadTask] represented by [taskId]
   /// or null if not a [ParallelDownloadTask] or not found
-  SendPort? _parallelTaskSendPort(String taskId) => _isolateSendPorts.entries
-      .firstWhereOrNull((entry) =>
-          entry.key is ParallelDownloadTask && entry.key.taskId == taskId)
-      ?.value;
+  SendPort? _parallelTaskSendPort(String taskId) => _isolateSendPorts.entries.firstWhereOrNull((entry) => entry.key is ParallelDownloadTask && entry.key.taskId == taskId)?.value;
 
   @override
   Future<int> reset(String group) async {
     final retryAndPausedTaskCount = await super.reset(group);
-    final inQueueIds = _queue.unorderedElements
-        .where((task) => task.group == group)
-        .map((task) => task.taskId);
-    final runningIds = _running
-        .where((task) => task.group == group)
-        .map((task) => task.taskId);
+    final inQueueIds = _queue.unorderedElements.where((task) => task.group == group).map((task) => task.taskId);
+    final runningIds = _running.where((task) => task.group == group).map((task) => task.taskId);
     final taskIds = [...inQueueIds, ...runningIds];
     if (taskIds.isNotEmpty) {
       await cancelTasksWithIds(taskIds);
@@ -299,12 +255,9 @@ final class DesktopDownloader extends BaseDownloader {
   }
 
   @override
-  Future<List<Task>> allTasks(
-      String group, bool includeTasksWaitingToRetry) async {
-    final retryAndPausedTasks =
-        await super.allTasks(group, includeTasksWaitingToRetry);
-    final inQueue =
-        _queue.unorderedElements.where((task) => task.group == group);
+  Future<List<Task>> allTasks(String group, bool includeTasksWaitingToRetry) async {
+    final retryAndPausedTasks = await super.allTasks(group, includeTasksWaitingToRetry);
+    final inQueue = _queue.unorderedElements.where((task) => task.group == group);
     final running = _running.where((task) => task.group == group);
     return [...retryAndPausedTasks, ...inQueue, ...running];
   }
@@ -314,9 +267,7 @@ final class DesktopDownloader extends BaseDownloader {
   /// Returns true if all cancellations were successful
   @override
   Future<bool> cancelPlatformTasksWithIds(List<String> taskIds) async {
-    final inQueue = _queue.unorderedElements
-        .where((task) => taskIds.contains(task.taskId))
-        .toList(growable: false);
+    final inQueue = _queue.unorderedElements.where((task) => taskIds.contains(task.taskId)).toList(growable: false);
     for (final task in inQueue) {
       processStatusUpdate(TaskStatusUpdate(task, TaskStatus.canceled));
       _remove(task);
@@ -346,9 +297,7 @@ final class DesktopDownloader extends BaseDownloader {
       return _running.where((task) => task.taskId == taskId).first;
     } on StateError {
       try {
-        return _queue.unorderedElements
-            .where((task) => task.taskId == taskId)
-            .first;
+        return _queue.unorderedElements.where((task) => task.taskId == taskId).first;
       } on StateError {
         return null;
       }
@@ -368,10 +317,7 @@ final class DesktopDownloader extends BaseDownloader {
   @override
   Future<bool> resume(Task task) async {
     if (await super.resume(task)) {
-      task = awaitTasks.containsKey(task)
-          ? awaitTasks.keys
-              .firstWhere((awaitTask) => awaitTask.taskId == task.taskId)
-          : task;
+      task = awaitTasks.containsKey(task) ? awaitTasks.keys.firstWhere((awaitTask) => awaitTask.taskId == task.taskId) : task;
       _resume.add(task);
       if (await enqueue(task)) {
         if (task is ParallelDownloadTask) {
@@ -388,14 +334,11 @@ final class DesktopDownloader extends BaseDownloader {
   }
 
   @override
-  Future<Map<String, String>> popUndeliveredData(Undelivered dataType) =>
-      Future.value({});
+  Future<Map<String, String>> popUndeliveredData(Undelivered dataType) => Future.value({});
 
   @override
-  Future<String?> moveToSharedStorage(String filePath,
-      SharedStorage destination, String directory, String? mimeType) async {
-    final destDirectoryPath =
-        await getDestinationDirectoryPath(destination, directory);
+  Future<String?> moveToSharedStorage(String filePath, SharedStorage destination, String directory, String? mimeType) async {
+    final destDirectoryPath = await getDestinationDirectoryPath(destination, directory);
     if (destDirectoryPath == null) {
       return null;
     }
@@ -414,10 +357,8 @@ final class DesktopDownloader extends BaseDownloader {
   }
 
   @override
-  Future<String?> pathInSharedStorage(
-      String filePath, SharedStorage destination, String directory) async {
-    final destDirectoryPath =
-        await getDestinationDirectoryPath(destination, directory);
+  Future<String?> pathInSharedStorage(String filePath, SharedStorage destination, String directory) async {
+    final destDirectoryPath = await getDestinationDirectoryPath(destination, directory);
     if (destDirectoryPath == null) {
       return null;
     }
@@ -430,8 +371,7 @@ final class DesktopDownloader extends BaseDownloader {
   /// Only the .Downloads directory is supported on desktop.
   /// The [directory] is appended to the base Downloads directory.
   /// The directory at the returned path is not guaranteed to exist.
-  Future<String?> getDestinationDirectoryPath(
-      SharedStorage destination, String directory) async {
+  Future<String?> getDestinationDirectoryPath(SharedStorage destination, String directory) async {
     if (destination != SharedStorage.downloads) {
       _log.finer('Desktop only supports .downloads destination');
       return null;
@@ -444,9 +384,7 @@ final class DesktopDownloader extends BaseDownloader {
     // remove leading and trailing slashes from [directory]
     var cleanDirectory = directory.replaceAll(RegExp(r'^/+'), '');
     cleanDirectory = cleanDirectory.replaceAll(RegExp(r'/$'), '');
-    return cleanDirectory.isEmpty
-        ? downloadsDirectory.path
-        : path.join(downloadsDirectory.path, cleanDirectory);
+    return cleanDirectory.isEmpty ? downloadsDirectory.path : path.join(downloadsDirectory.path, cleanDirectory);
   }
 
   @override
@@ -463,8 +401,7 @@ final class DesktopDownloader extends BaseDownloader {
     }
     final result = await Process.run(executable, [filePath], runInShell: true);
     if (result.exitCode != 0) {
-      _log.fine(
-          'openFile command $executable returned exit code ${result.exitCode}');
+      _log.fine('openFile command $executable returned exit code ${result.exitCode}');
     }
     return result.exitCode == 0;
   }
@@ -478,22 +415,14 @@ final class DesktopDownloader extends BaseDownloader {
   }
 
   @override
-  Future<String> testSuggestedFilename(
-      DownloadTask task, String contentDisposition) async {
-    final h = contentDisposition.isNotEmpty
-        ? {'Content-disposition': contentDisposition}
-        : <String, String>{};
+  Future<String> testSuggestedFilename(DownloadTask task, String contentDisposition) async {
+    final h = contentDisposition.isNotEmpty ? {'Content-disposition': contentDisposition} : <String, String>{};
     final t = await taskWithSuggestedFilename(task, h, false);
     return t.filename;
   }
 
   @override
-  dynamic platformConfig(
-          {dynamic globalConfig,
-          dynamic androidConfig,
-          dynamic iOSConfig,
-          dynamic desktopConfig}) =>
-      desktopConfig;
+  dynamic platformConfig({dynamic globalConfig, dynamic androidConfig, dynamic iOSConfig, dynamic desktopConfig}) => desktopConfig;
 
   @override
   Future<(String, String)> configureItem((String, dynamic) configItem) async {
@@ -510,23 +439,13 @@ final class DesktopDownloader extends BaseDownloader {
       case (Config.bypassTLSCertificateValidation, bool bypass):
         bypassTLSCertificateValidation = bypass;
 
-      case (
-          Config.holdingQueue,
-          (
-            int? maxConcurrentParam,
-            int? maxConcurrentByHostParam,
-            int? maxConcurrentByGroupParam
-          )
-        ):
+      case (Config.holdingQueue, (int? maxConcurrentParam, int? maxConcurrentByHostParam, int? maxConcurrentByGroupParam)):
         maxConcurrent = maxConcurrentParam ?? 10;
         maxConcurrentByHost = maxConcurrentByHostParam ?? unlimited;
         maxConcurrentByGroup = maxConcurrentByGroupParam ?? unlimited;
 
       default:
-        return (
-          configItem.$1,
-          'not implemented'
-        ); // this method did not process this configItem
+        return (configItem.$1, 'not implemented'); // this method did not process this configItem
     }
     return (configItem.$1, ''); // normal result
   }
@@ -556,15 +475,13 @@ final class DesktopDownloader extends BaseDownloader {
     _recreateClient();
   }
 
-  static bool get bypassTLSCertificateValidation =>
-      _bypassTLSCertificateValidation;
+  static bool get bypassTLSCertificateValidation => _bypassTLSCertificateValidation;
 
   /// Set the HTTP Client to use, with the given parameters
   ///
   /// This is a convenience method, bundling the [requestTimeout],
   /// [proxy] and [bypassTLSCertificateValidation]
-  static void setHttpClient(Duration? requestTimeout,
-      Map<String, dynamic> proxy, bool bypassTLSCertificateValidation) {
+  static void setHttpClient(Duration? requestTimeout, Map<String, dynamic> proxy, bool bypassTLSCertificateValidation) {
     _requestTimeout = requestTimeout;
     _proxy = proxy;
     _bypassTLSCertificateValidation = bypassTLSCertificateValidation;
@@ -575,26 +492,18 @@ final class DesktopDownloader extends BaseDownloader {
   static _recreateClient() {
     final client = HttpClient();
     client.connectionTimeout = requestTimeout;
-    client.findProxy = proxy.isNotEmpty
-        ? (_) => 'PROXY ${_proxy['address']}:${_proxy['port']}'
-        : null;
-    client.badCertificateCallback =
-        bypassTLSCertificateValidation && !kReleaseMode
-            ? (X509Certificate cert, String host, int port) => true
-            : null;
+    client.findProxy = proxy.isNotEmpty ? (_) => 'PROXY ${_proxy['address']}:${_proxy['port']}' : null;
+    client.badCertificateCallback = bypassTLSCertificateValidation && !kReleaseMode ? (X509Certificate cert, String host, int port) => true : null;
     httpClient = IOClient(client);
     if (bypassTLSCertificateValidation) {
       if (kReleaseMode) {
-        throw ArgumentError(
-            'You cannot bypass certificate validation in release mode');
+        throw ArgumentError('You cannot bypass certificate validation in release mode');
       } else {
-        _log.warning(
-            'TLS certificate validation is bypassed. This is insecure and cannot be '
+        _log.warning('TLS certificate validation is bypassed. This is insecure and cannot be '
             'done in release mode');
       }
     }
-    _log.finest(
-        'Using HTTP client with requestTimeout $_requestTimeout, proxy $_proxy and TLSCertificateBypass = $bypassTLSCertificateValidation');
+    _log.finest('Using HTTP client with requestTimeout $_requestTimeout, proxy $_proxy and TLSCertificateBypass = $bypassTLSCertificateValidation');
   }
 
   @override
@@ -610,5 +519,11 @@ final class DesktopDownloader extends BaseDownloader {
     _queue.remove(task);
     _running.remove(task);
     _isolateSendPorts.remove(task);
+  }
+
+  @override
+  setCancelText(String text) {
+    // TODO: implement setCancelText
+    throw UnimplementedError();
   }
 }

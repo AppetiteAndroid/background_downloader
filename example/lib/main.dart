@@ -8,8 +8,7 @@ import 'package:logging/logging.dart';
 
 void main() {
   Logger.root.onRecord.listen((LogRecord rec) {
-    debugPrint(
-        '${rec.loggerName}>${rec.level.name}: ${rec.time}: ${rec.message}');
+    debugPrint('${rec.loggerName}>${rec.level.name}: ${rec.time}: ${rec.message}');
   });
 
   runApp(const MyApp());
@@ -30,8 +29,7 @@ class _MyAppState extends State<MyApp> {
   bool downloadWithError = false;
   TaskStatus? downloadTaskStatus;
   DownloadTask? backgroundDownloadTask;
-  StreamController<TaskProgressUpdate> progressUpdateStream =
-      StreamController();
+  StreamController<TaskProgressUpdate> progressUpdateStream = StreamController();
 
   bool loadAndOpenInProgress = false;
   bool loadABunchInProgress = false;
@@ -60,37 +58,32 @@ class _MyAppState extends State<MyApp> {
       (Config.localize, {'Cancel': 'StopIt'}),
     ]).then((result) => debugPrint('Configuration result = $result'));
 
+    if (Platform.isAndroid) {
+      FileDownloader().setCancelTextAndroid('ASDSAD');
+    }
+
     // Registering a callback and configure notifications
     FileDownloader()
-        .registerCallbacks(
-            taskNotificationTapCallback: myNotificationTapCallback)
+        .registerCallbacks(taskNotificationTapCallback: myNotificationTapCallback)
         .configureNotificationForGroup(FileDownloader.defaultGroup,
             // For the main download button
             // which uses 'enqueue' and a default group
-            running: const TaskNotification('Download {filename}',
-                'File: {filename} - {progress} - speed {networkSpeed} and {timeRemaining} remaining'),
-            complete: const TaskNotification(
-                '{displayName} download {filename}', 'Download complete'),
-            error: const TaskNotification(
-                'Download {filename}', 'Download failed'),
-            paused: const TaskNotification(
-                'Download {filename}', 'Paused with metadata {metadata}'),
+            running: const TaskNotification('Download {filename}', 'File: {filename} - {progress} - speed {networkSpeed} and {timeRemaining} remaining'),
+            complete: const TaskNotification('{displayName} download {filename}', 'Download complete'),
+            error: const TaskNotification('Download {filename}', 'Download failed'),
+            paused: const TaskNotification('Download {filename}', 'Paused with metadata {metadata}'),
             progressBar: true)
         .configureNotificationForGroup('bunch',
-            running: const TaskNotification(
-                '{numFinished} out of {numTotal}', 'Progress = {progress}'),
-            complete:
-                const TaskNotification("Done!", "Loaded {numTotal} files"),
-            error: const TaskNotification(
-                'Error', '{numFailed}/{numTotal} failed'),
+            running: const TaskNotification('{numFinished} out of {numTotal}', 'Progress = {progress}'),
+            complete: const TaskNotification("Done!", "Loaded {numTotal} files"),
+            error: const TaskNotification('Error', '{numFailed}/{numTotal} failed'),
             progressBar: false,
             groupNotificationId: 'notGroup')
         .configureNotification(
             // for the 'Download & Open' dog picture
             // which uses 'download' which is not the .defaultGroup
             // but the .await group so won't use the above config
-            complete: const TaskNotification(
-                'Download {filename}', 'Download complete'),
+            complete: const TaskNotification('Download {filename}', 'Download complete'),
             tapOpensFile: true); // dog can also open directly from tap
 
     // Listen to updates and process
@@ -98,11 +91,7 @@ class _MyAppState extends State<MyApp> {
       switch (update) {
         case TaskStatusUpdate():
           if (update.task == backgroundDownloadTask) {
-            buttonState = switch (update.status) {
-              TaskStatus.running || TaskStatus.enqueued => ButtonState.pause,
-              TaskStatus.paused => ButtonState.resume,
-              _ => ButtonState.reset
-            };
+            buttonState = switch (update.status) { TaskStatus.running || TaskStatus.enqueued => ButtonState.pause, TaskStatus.paused => ButtonState.resume, _ => ButtonState.reset };
             setState(() {
               downloadTaskStatus = update.status;
             });
@@ -116,8 +105,7 @@ class _MyAppState extends State<MyApp> {
 
   /// Process the user tapping on a notification by printing a message
   void myNotificationTapCallback(Task task, NotificationType notificationType) {
-    debugPrint(
-        'Tapped notification $notificationType for taskId ${task.taskId}');
+    debugPrint('Tapped notification $notificationType for taskId ${task.taskId}');
   }
 
   @override
@@ -146,8 +134,7 @@ class _MyAppState extends State<MyApp> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      Text('RequireWiFi setting',
-                          style: Theme.of(context).textTheme.titleLarge),
+                      Text('RequireWiFi setting', style: Theme.of(context).textTheme.titleLarge),
                       const RequireWiFiChoice(),
                     ],
                   ),
@@ -156,9 +143,7 @@ class _MyAppState extends State<MyApp> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Expanded(
-                          child: Text('Force error',
-                              style: Theme.of(context).textTheme.titleLarge)),
+                      Expanded(child: Text('Force error', style: Theme.of(context).textTheme.titleLarge)),
                       Switch(
                           value: downloadWithError,
                           onChanged: (value) {
@@ -179,10 +164,7 @@ class _MyAppState extends State<MyApp> {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
-                    children: [
-                      const Expanded(child: Text('File download status:')),
-                      Text('${downloadTaskStatus ?? "undefined"}')
-                    ],
+                    children: [const Expanded(child: Text('File download status:')), Text('${downloadTaskStatus ?? "undefined"}')],
                   ),
                 ),
                 const Divider(
@@ -192,8 +174,7 @@ class _MyAppState extends State<MyApp> {
                 ),
                 Center(
                     child: ElevatedButton(
-                        onPressed:
-                            loadAndOpenInProgress ? null : processLoadAndOpen,
+                        onPressed: loadAndOpenInProgress ? null : processLoadAndOpen,
                         child: Text(
                           Platform.isIOS
                               ? 'Load, open and add'
@@ -210,20 +191,12 @@ class _MyAppState extends State<MyApp> {
                   thickness: 5,
                   color: Colors.blueGrey,
                 ),
-                Center(
-                    child: ElevatedButton(
-                        onPressed:
-                            loadABunchInProgress ? null : processLoadABunch,
-                        child: const Text('Load a bunch'))),
+                Center(child: ElevatedButton(onPressed: loadABunchInProgress ? null : processLoadABunch, child: const Text('Load a bunch'))),
                 Center(child: Text(loadABunchInProgress ? 'Enqueueing' : '')),
               ],
             ),
           )),
-          bottomSheet: DownloadProgressIndicator(progressUpdateStream.stream,
-              showPauseButton: true,
-              showCancelButton: true,
-              backgroundColor: Colors.grey,
-              maxExpandable: 3)),
+          bottomSheet: DownloadProgressIndicator(progressUpdateStream.stream, showPauseButton: true, showCancelButton: true, backgroundColor: Colors.grey, maxExpandable: 3)),
     );
   }
 
@@ -251,8 +224,7 @@ class _MyAppState extends State<MyApp> {
       case ButtonState.cancel:
         // cancel download
         if (backgroundDownloadTask != null) {
-          await FileDownloader()
-              .cancelTasksWithIds([backgroundDownloadTask!.taskId]);
+          await FileDownloader().cancelTasksWithIds([backgroundDownloadTask!.taskId]);
         }
         break;
       case ButtonState.reset:
@@ -281,11 +253,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> processLoadAndOpen() async {
     if (!loadAndOpenInProgress) {
       await getPermission(PermissionType.notifications);
-      var task = DownloadTask(
-          url:
-              'https://i2.wp.com/www.skiptomylou.org/wp-content/uploads/2019/06/dog-drawing.jpg',
-          baseDirectory: BaseDirectory.applicationSupport,
-          filename: 'dog.jpg');
+      var task = DownloadTask(url: 'https://i2.wp.com/www.skiptomylou.org/wp-content/uploads/2019/06/dog-drawing.jpg', baseDirectory: BaseDirectory.applicationSupport, filename: 'dog.jpg');
       setState(() {
         loadAndOpenInProgress = true;
       });
@@ -294,25 +262,17 @@ class _MyAppState extends State<MyApp> {
       if (Platform.isIOS) {
         // add to photos library and print path
         // If you need the path, ask full permissions beforehand by calling
-        var auth = await FileDownloader()
-            .permissions
-            .status(PermissionType.iosChangePhotoLibrary);
+        var auth = await FileDownloader().permissions.status(PermissionType.iosChangePhotoLibrary);
         if (auth != PermissionStatus.granted) {
-          auth = await FileDownloader()
-              .permissions
-              .request(PermissionType.iosChangePhotoLibrary);
+          auth = await FileDownloader().permissions.request(PermissionType.iosChangePhotoLibrary);
         }
         if (auth == PermissionStatus.granted) {
-          final identifier = await FileDownloader()
-              .moveToSharedStorage(task, SharedStorage.images);
+          final identifier = await FileDownloader().moveToSharedStorage(task, SharedStorage.images);
           if (identifier != null) {
-            final path = await FileDownloader()
-                .pathInSharedStorage(identifier, SharedStorage.images);
-            debugPrint(
-                'iOS path to dog picture in Photos Library = ${path ?? "permission denied"}');
+            final path = await FileDownloader().pathInSharedStorage(identifier, SharedStorage.images);
+            debugPrint('iOS path to dog picture in Photos Library = ${path ?? "permission denied"}');
           } else {
-            debugPrint(
-                'Could not add file to Photos Library, likely because permission denied');
+            debugPrint('Could not add file to Photos Library, likely because permission denied');
           }
         } else {
           debugPrint('iOS Photo Library permission not granted');
@@ -322,19 +282,13 @@ class _MyAppState extends State<MyApp> {
         // on Android we move, not add, so we first wat for the
         // openFile method to complete
         await Future.delayed(const Duration(seconds: 3));
-        var auth = await FileDownloader()
-            .permissions
-            .status(PermissionType.androidSharedStorage);
+        var auth = await FileDownloader().permissions.status(PermissionType.androidSharedStorage);
         if (auth != PermissionStatus.granted) {
-          auth = await FileDownloader()
-              .permissions
-              .request(PermissionType.androidSharedStorage);
+          auth = await FileDownloader().permissions.request(PermissionType.androidSharedStorage);
         }
         if (auth == PermissionStatus.granted) {
-          final path = await FileDownloader()
-              .moveToSharedStorage(task, SharedStorage.images);
-          debugPrint(
-              'Android path to dog picture in .images = ${path ?? "permission denied"}');
+          final path = await FileDownloader().moveToSharedStorage(task, SharedStorage.images);
+          debugPrint('Android path to dog picture in .images = ${path ?? "permission denied"}');
         } else {
           debugPrint('androidSharedStorage permission not granted');
         }
@@ -353,8 +307,7 @@ class _MyAppState extends State<MyApp> {
       await getPermission(PermissionType.notifications);
       for (var i = 0; i < 5; i++) {
         await FileDownloader().enqueue(DownloadTask(
-            url:
-                'https://storage.googleapis.com/approachcharts/test/5MB-test.ZIP',
+            url: 'https://storage.googleapis.com/approachcharts/test/5MB-test.ZIP',
             filename: 'File_${Random().nextInt(1000)}',
             group: 'bunch',
             updates: Updates.progress)); // must provide progress updates!
@@ -370,9 +323,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> getPermission(PermissionType permissionType) async {
     var status = await FileDownloader().permissions.status(permissionType);
     if (status != PermissionStatus.granted) {
-      if (await FileDownloader()
-          .permissions
-          .shouldShowRationale(permissionType)) {
+      if (await FileDownloader().permissions.shouldShowRationale(permissionType)) {
         debugPrint('Showing some rationale');
       }
       status = await FileDownloader().permissions.request(permissionType);
@@ -406,10 +357,8 @@ class _RequireWiFiChoiceState extends State<RequireWiFiChoice> {
   Widget build(BuildContext context) {
     return SegmentedButton<RequireWiFi>(
       segments: const <ButtonSegment<RequireWiFi>>[
-        ButtonSegment<RequireWiFi>(
-            value: RequireWiFi.asSetByTask, label: Text('Task')),
-        ButtonSegment<RequireWiFi>(
-            value: RequireWiFi.forAllTasks, label: Text('All')),
+        ButtonSegment<RequireWiFi>(value: RequireWiFi.asSetByTask, label: Text('Task')),
+        ButtonSegment<RequireWiFi>(value: RequireWiFi.forAllTasks, label: Text('All')),
         ButtonSegment<RequireWiFi>(
           value: RequireWiFi.forNoTasks,
           label: Text('None'),
@@ -422,8 +371,7 @@ class _RequireWiFiChoiceState extends State<RequireWiFiChoice> {
           // selected at one time, so its value is always the first
           // item in the selected set.
           requireWiFi = newSelection.first;
-          unawaited(FileDownloader()
-              .requireWiFi(requireWiFi, rescheduleRunningTasks: true));
+          unawaited(FileDownloader().requireWiFi(requireWiFi, rescheduleRunningTasks: true));
         });
       },
     );

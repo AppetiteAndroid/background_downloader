@@ -140,7 +140,7 @@ class BDPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             val constraints = Constraints.Builder().setRequiredNetworkType(
                 if (taskRequiresWifi) NetworkType.UNMETERED else NetworkType.CONNECTED
             ).build()
-            val requestBuilder = when(task.taskType) {
+            val requestBuilder = when (task.taskType) {
                 "ParallelDownloadTask" -> OneTimeWorkRequestBuilder<ParallelDownloadTaskWorker>()
                 "DownloadTask" -> OneTimeWorkRequestBuilder<DownloadTaskWorker>()
                 "UploadTask" -> OneTimeWorkRequestBuilder<UploadTaskWorker>()
@@ -417,9 +417,8 @@ class BDPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                 "forceFailPostOnBackgroundChannel" -> methodForceFailPostOnBackgroundChannel(
                     call, result
                 )
-
                 "testSuggestedFilename" -> methodTestSuggestedFilename(call, result)
-
+                "cancelText" -> methodCancelButtonText(call, result)
                 else -> result.notImplemented()
             }
         }
@@ -1046,6 +1045,10 @@ class BDPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         result.success(t.filename)
     }
 
+    private fun methodCancelButtonText(call: MethodCall, result: Result){
+        notificationButtonText["Cancel"] = call.arguments as String
+    }
+
     /**
      * Helper function to update or delete the [value] in shared preferences under [key]
      *
@@ -1167,7 +1170,7 @@ class BDPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         if (notificationButtonText.isEmpty()) {
             // store localized strings so they can be used in notifications even when the
             // activity is not alive
-            notificationButtonText["Cancel"] = activity!!.getString(R.string.bg_downloader_cancel)
+            //notificationButtonText["Cancel"] = activity!!.getString(R.string.bg_downloader_cancel)
             notificationButtonText["Pause"] = activity!!.getString(R.string.bg_downloader_pause)
             notificationButtonText["Resume"] = activity!!.getString(R.string.bg_downloader_resume)
         }
